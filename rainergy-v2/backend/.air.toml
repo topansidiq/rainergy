@@ -1,0 +1,17 @@
+[build]
+  bin = "tmp/main"
+  cmd = "go build -o tmp/main ."
+  include_ext = ["go", "html", "tpl", "tmpl"]
+  exclude_dir = ["tmp"]
+  exclude_file = ["*_test.go"]
+  delay = 1000
+  send_interrupt = true
+  log = "build.log"
+
+[build.watch]
+  dirs = ["."]
+  # Tambahkan folder frontend yang berisi template
+  dirs = ["../frontend/resource/views"]
+
+[run]
+  cmd = "./tmp/main"

@@ -1,0 +1,32 @@
+# Golang
+/bin/
+/pkg/
+/*.exe
+*.test
+*.out
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Tailwind build output
+/public/css/output.css
+
+# Env & Config
+.env
+.env.*
+config.yaml
+firebase.json
+serviceAccount.json
+
+# VSCode / JetBrains
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

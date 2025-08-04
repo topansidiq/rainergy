@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rainergy Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script defer src="/public/js/dashboard.js"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-800">
+    <div
+      class="max-w-4xl mx-auto p-6"
+      x-data="monitoring()"
+      x-init="loadData()"
+    >
+      <h1 class="text-3xl font-bold mb-6">📈 Rainergy Monitoring Dashboard</h1>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <template x-for="item in metrics" :key="item.label">
+          <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-sm text-gray-500" x-text="item.label"></p>
+            <p
+              class="text-xl font-semibold mt-1"
+              x-text="item.value + ' ' + item.unit"
+            ></p>
+          </div>
+        </template>
+      </div>
+
+      <p
+        class="mt-6 text-sm text-gray-400"
+        x-text="'Last updated: ' + formatTime(lastUpdate)"
+      ></p>
+    </div>
+  </body>
+</html>
