@@ -1,0 +1,9 @@
+https://github.com/topansidiq/rainergy - Rainergy
+
+Rainergy adalah proyek pembuatan pembangkit energi listrik tenaga hujan. Dengan memanfaatkan teknologi Piezoelektrik - PV, getaran yang di hasilkan dari hujan menekan Piezo dan menghasilkan arus AC yang kemudian di ubah ke DC menggunakan alat bantu konverter energi. Semua daya akan dikumpulkan ke dalam battery dan dapat digunakan. Energi yang dikumpulkan dari Piezo akan digunakan sebagai sumber tegangan untuk sebuah alat IoT yang berfungsi untuk monitoring panel surya. Alat yang berbasis IoT ini mampu mengukur ketebalan debu, arus, tegangan, dan daya yang terkumpul, kemudian data-data tersebut dikumpulkan ke dalam dashboard web. Panel juga memiliki sistem pembersih otomatis, sehingga pemilik tidak perlu lagi kesulitan mengakses panel walau dari jauh.
+
+Rainergy dilengkapi dengan alat bantu komunikasi jarak jauh yang dirancang sedimikian rupa. Alat komunikasi tersebut dibuat menggunakan LoRa yang bisa mengirim sinyal hingga 10 km tanpa internet. LoRa akan berfungsi penuh dalam proses komunikasi data antara panel dan piezo ke dashboard web. Pemilik dapat memantau aktivitas panel dari manapun melalui website yang dibuat ini. Aplikasi yang dibuat berbentuk web dengan menggunakan teknologi Laravel sebagai Full-stack aplikasi monitoring, serta Javascript sebagai API yang digunakan oleh LoRa untuk jalur komunikasi dengan dashboard.
+
+Aplikasi monitoring ini memiliki fitur membership yang bertujuan sebagai salah satu ide bisnis. Sebagai membership pemilik dapat menikmati fitur service langsung yang dilakukan oleh pihak vendor nantinya jika ada kendala yang dialamai oleh alat. Jika tidak berlangganan, maka pemiliki harus memantau dengan sendirinya melalui dashboard dan melaporkan kepada vendor terkait kerusakan tersebut.
+
+Developer: Topan Sidiq
