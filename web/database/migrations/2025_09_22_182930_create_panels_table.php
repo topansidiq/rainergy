@@ -14,16 +14,15 @@ return new class extends Migration
         Schema::create('panels', function (Blueprint $table) {
             $table->id();
             $table->string('panel_id', 30)->unique();
-            $table->string('unit_id');
+            $table->string('unit_id', 30);
             $table->foreign('unit_id')->references('unit_id')->on('units')->cascadeOnDelete();
-            $table->float('dust')->default(0);
             $table->float('current')->default(0);
             $table->float('voltage')->default(0);
             $table->float('power')->default(0);
-            $table->boolean('pump_status')->default(false);
+            $table->boolean('rain_status')->default(false);
             $table->boolean('wiper_status')->default(false);
-            $table->timestamp('installed_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+            $table->timestamp('last_cleaning')->useCurrent();
+            $table->timestamps();
         });
     }
 

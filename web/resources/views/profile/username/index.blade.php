@@ -13,7 +13,7 @@
             </div>
 
             <!-- Form -->
-            <form action="{{ route('profile.username', $user->id) }}" method="POST" class="mt-8 space-y-6">
+            <form action="{{ route('profile.username') }}" method="POST" class="mt-8 space-y-6">
                 @csrf
                 @method('PUT')
 

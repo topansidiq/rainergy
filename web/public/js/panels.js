@@ -1,88 +1,51 @@
-async function getPanelRecord(api) {
-    try {
-        const res = await fetch(api);
-        const resJson = await res.json();
-        const status = resJson.status;
-        const message = resJson.message;
-        const panel = resJson.data;
+let audioContext;
+let soundEnabled = false;
 
-        console.log('Status\t:', status);
-        console.log('Message\t:', message);
-        console.log('Data\t:', panel);
-        return panel;
-    } catch (err) {
-        console.error("Error fetching panel record:", err);
-        return null;
+document.addEventListener("DOMContentLoaded", () => {
+    const startButton = document.getElementById('start-sound');
+    if (startButton) {
+        startButton.addEventListener('click', () => {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext.resume();
+            soundEnabled = true;
+            console.log("AudioContext enabled!");
+        });
     }
+});
+
+function playNotification() {
+    if (!soundEnabled || !audioContext) {
+        console.warn("AudioContext not allowed — waiting for user gesture!");
+        return;
+    }
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "square";
+    osc.frequency.value = 2500;
+    gain.gain.value = 0.2;
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start();
+    osc.stop(audioContext.currentTime + 0.8);
 }
 
-async function renderPanelChartD3(container, api, dataset = "dust") {
+function pageReload() {
+    window.location.reload();
+}
+
+async function getPanelReading(url) {
     try {
-        const res = await fetch(api);
+        const res = await fetch(url);
         const json = await res.json();
-        const records = json.data;
+        const now = new Date();
+        const data = json.data;
 
-        // ambil labels & data
-        const labels = records.map(r => r.data_id);
-        const data = records.map(r => r[dataset]);
+        console.log(`%c[${now.toLocaleString()}] Fetch panel reading for panel ${json.panel_id}`, 'color: green');
+        console.info(data);
+        console.info(`%c${json.message}`, 'color: skyblue;');
 
-        // clear container biar nggak numpuk
-        d3.select(container).selectAll("*").remove();
-
-        const margin = { top: 20, right: 30, bottom: 40, left: 60 };
-        const width = 600 - margin.left - margin.right;
-        const height = 300 - margin.top - margin.bottom;
-
-        const svg = d3.select(container)
-            .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        // skala
-        const x = d3.scalePoint()
-            .domain(labels)
-            .range([0, width]);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(data)])
-            .nice()
-            .range([height, 0]);
-
-        // garis
-        const line = d3.line()
-            .x((d, i) => x(labels[i]))
-            .y(d => y(d))
-            .curve(d3.curveMonotoneX);
-
-        // axis
-        svg.append("g")
-            .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x).ticks(labels.length));
-
-        svg.append("g")
-            .call(d3.axisLeft(y));
-
-        // path
-        svg.append("path")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", dataset === "dust" ? "red" : dataset === "current" ? "blue" : "green")
-            .attr("stroke-width", 2)
-            .attr("d", line);
-
-        // titik data
-        svg.selectAll("circle")
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr("cx", (d, i) => x(labels[i]))
-            .attr("cy", d => y(d))
-            .attr("r", 4)
-            .attr("fill", dataset === "dust" ? "red" : dataset === "current" ? "blue" : "green");
-
-    } catch (err) {
-        console.error("Error rendering D3 chart:", err);
+        return data;
+    } catch (error) {
+        console.error(error);
     }
 }

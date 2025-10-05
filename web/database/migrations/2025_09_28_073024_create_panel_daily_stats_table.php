@@ -13,15 +13,12 @@ return new class extends Migration
     {
         Schema::create('panel_daily_stats', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('panel_id')->constrained('panels')->cascadeOnDelete();
-            $table->date('date');        // tanggal
-            $table->tinyInteger('hour'); // jam 0-23
+            $table->string('panel_id', 30);
+            $table->foreign('panel_id')->references('panel_id')->on('panels')->cascadeOnDelete();
             $table->float('avg_voltage')->default(0);
             $table->float('avg_current')->default(0);
             $table->float('avg_power')->default(0);
-            $table->float('avg_dust')->default(0);
             $table->timestamps();
-            $table->unique(['panel_id', 'date', 'hour']); // biar tidak duplikat
         });
     }
 

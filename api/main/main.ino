@@ -4,6 +4,23 @@
 #include <ArduinoJson.h>
 #include <WebServer.h>
 #include <HTTPClient.h>
+#include <vector>
+
+std::vector<String> registeredPanels;
+
+/**
+ * Bussiness logic
+ * 1. Receiver on
+ * 2. LCD/serial monitor display uid esp receiver
+ * 2. Receiver enter to looping waiting for user add new unit
+ * 2. User login
+ * 2. Add new unit with uid esp receiver
+ * 3. If success and receiver detected that unit has been installed
+ * 3. Receiver ready
+ * 4. Transmitter on
+ * 5. Transmitter send uid esp transmitter to receiver
+ * 6. LCD at reveiver display uid esp transmitter
+ */
 
 // WiFi and server configuration
 const char *ssid = "sa";
@@ -22,7 +39,7 @@ bool wifi_status = false;
 
 // Variable initialization
 float dustDensity, voltagePanel, currentPanel;
-int statusPompa, statusWiper;
+int rainStatus, wiperStatus;
 String panelId, unitId, location;
 
 String geolocateViaWifi()
@@ -85,41 +102,69 @@ void setup()
         Serial.println("Failed starting LoRa!");
         return;
     }
-    Serial.println("LoRa Receiver is ready!");
+    Serial.println("LoRa is ready!");
 
     // Install unit
     unitId = "u-" + String((uint32_t)ESP.getEfuseMac(), HEX);
     location = geolocateViaWifi();
 
-    if (isUnitExist(unitId))
+    Serial.println("Checking for unit: " + unitId);
+
+    bool notUnit = true;
+    int dotCount = 0;
+
+    while (notUnit)
     {
-        Serial.println("Unit " + unitId + " ready!");
-    }
-    else
-    {
-        installUnit(unitId, 1, location);
-        Serial.print("New unit detected: " + unitId + ". Location: " + location);
+        if (isUnitExist(unitId))
+        {
+            notUnit = false;
+            break;
+        }
+
+        Serial.println("Unit doesn't exist. Please install this unit on your account with ID: " + unitId);
+        delay(2000);
+
+        // Tampilkan animasi titik-titik "Waiting for unit installation..."
+        Serial.print("Waiting for unit installation");
+        for (int i = 0; i < dotCount; i++)
+        {
+            Serial.print(".");
+        }
+        Serial.println(); // pindah baris
+        delay(1000);
+
+        dotCount++;
+        if (dotCount > 5)
+            dotCount = 1; // reset titik biar gak kepanjangan
+
+        if (isUnitExist(unitId))
+        {
+            notUnit = false;
+        }
     }
 
-    delay(3000);
+    Serial.println("Unit " + unitId + " ready!");
 }
+
+// Simpan daftar panel yang sudah diketahui terdaftar
 
 void loop()
 {
-    // Start LED indicator is success connect to WiFi
-    digitalWrite(ledPin2, HIGH);
+    digitalWrite(ledPin2, HIGH); // LED: WiFi tersambung
 
-    // Starting manipulation LoRa package
     int packetSize = LoRa.parsePacket();
     if (packetSize)
     {
+        // Ambil data payload
         String payload = "";
         while (LoRa.available())
         {
             payload += (char)LoRa.read();
         }
-        Serial.println("New data: " + payload);
 
+        Serial.println("New LoRa data: " + payload);
+
+        // Parsing JSON
         StaticJsonDocument<256> doc;
         DeserializationError error = deserializeJson(doc, payload);
         if (error)
@@ -129,45 +174,90 @@ void loop()
             return;
         }
 
-        panelId = doc["panel_id"].as<String>();
-        dustDensity = doc["dust"];
-        voltagePanel = doc["voltage"];
-        currentPanel = doc["current"];
-        statusPompa = doc["pump_status"];
-        statusWiper = doc["wiper_status"];
+        // Ambil data dari JSON
+        String panelId = doc["panel_id"].as<String>();
+        float voltage = doc["voltage"];
+        float current = doc["current"];
+        bool rainStatus = doc["rain_status"];
+        bool wiperStatus = doc["wiper_status"];
+        int lastClean = doc["last_clean"];
 
         if (WiFi.status() == WL_CONNECTED)
         {
             HTTPClient http;
 
-            if (isPanelExist(panelId))
+            // Cek apakah panel sudah ada di daftar terdaftar
+            bool knownPanel = false;
+            for (String id : registeredPanels)
             {
-                http.begin(serverName + "/panels/" + panelId);
-                http.addHeader("Content-Type", "application/json");
-
-                // bikin JSON khusus body
-                DynamicJsonDocument bodyDoc(512);
-                bodyDoc["dust"] = dustDensity;
-                bodyDoc["current"] = currentPanel;
-                bodyDoc["voltage"] = voltagePanel;
-                bodyDoc["pump_status"] = statusPompa;
-                bodyDoc["wiper_status"] = statusWiper;
-
-                String requestBody;
-                serializeJson(bodyDoc, requestBody);
-
-                Serial.println("Sending JSON");
-                Serial.println(requestBody);
-
-                int httpResponseCode = http.PUT(requestBody);
-                Serial.print("Response: ");
-                Serial.println(httpResponseCode);
-                http.end();
+                if (id == panelId)
+                {
+                    knownPanel = true;
+                    break;
+                }
             }
-            else
+
+            // Kalau belum pernah didaftarkan, cek ke server
+            if (!knownPanel)
             {
-                installPanel(panelId, unitId);
+                Serial.println("Checking panel: " + panelId);
+
+                if (isPanelExist(panelId))
+                {
+                    Serial.println("Panel " + panelId + " found in database!");
+                    registeredPanels.push_back(panelId);
+                }
+                else
+                {
+                    // Panel belum ada → tampilkan pesan tunggu
+                    int dotCount = 0;
+
+                    while (!isPanelExist(panelId))
+                    {
+                        Serial.print("\rWaiting for panel installation"); // tetap di baris yang sama
+
+                        for (int i = 0; i < dotCount; i++)
+                        {
+                            Serial.print(".");
+                        }
+
+                        // Tambahkan spasi untuk "menghapus" sisa teks lama
+                        Serial.print("       ");
+
+                        dotCount++;
+                        if (dotCount > 5)
+                            dotCount = 1;
+
+                        delay(1000);
+                    }
+
+                    Serial.println("\nPanel " + panelId + " registered!");
+                    registeredPanels.push_back(panelId);
+                }
             }
+
+            // Kirim data terbaru ke server
+            DynamicJsonDocument bodyDoc(512);
+            bodyDoc["current"] = current;
+            bodyDoc["voltage"] = voltage;
+            bodyDoc["rain_status"] = rainStatus;
+            bodyDoc["wiper_status"] = wiperStatus;
+            bodyDoc["last_clean"] = lastClean;
+
+            String requestBody;
+            serializeJson(bodyDoc, requestBody);
+
+            http.begin(serverName + "/panels/" + panelId);
+            http.addHeader("Content-Type", "application/json");
+
+            Serial.println("\nSending update for panel " + panelId);
+            Serial.println(requestBody);
+
+            int httpResponseCode = http.PUT(requestBody);
+            Serial.print("Response: ");
+            Serial.println(httpResponseCode);
+
+            http.end();
         }
         else
         {
@@ -175,44 +265,10 @@ void loop()
             wifi_status = false;
             digitalWrite(ledPin2, LOW);
         }
-
-        delay(5000);
     }
-}
 
-void installUnit(String unit_id, int user_id, String location)
-{
-    HTTPClient http;
-    http.begin(serverName + "/units");
-    http.addHeader("Content-Type", "application/json");
-
-    // Buat JSON object
-    StaticJsonDocument<256> doc;
-    doc["unit_id"] = unit_id;
-    doc["user_id"] = user_id;
-    doc["location"] = location;
-
-    String jsonData;
-    serializeJson(doc, jsonData);
-
-    Serial.println("Sending JSON:");
-    Serial.println(jsonData);
-
-    int httpResponseCode = http.POST(jsonData);
-
-    if (httpResponseCode > 0)
-    {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-        String response = http.getString();
-        Serial.println("Response: " + response);
-    }
-    else
-    {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
-    }
-    http.end();
+    // Biarkan loop terus berjalan tanpa blocking
+    delay(100);
 }
 
 bool isUnitExist(String id)
@@ -245,41 +301,6 @@ bool isUnitExist(String id)
 
     http.end();
     return false;
-}
-
-void installPanel(String panel_id, String unit_id)
-{
-    HTTPClient http;
-    http.begin(serverName + "/panels");
-    http.addHeader("Content-Type", "application/json");
-
-    // Buat JSON object
-    StaticJsonDocument<256> doc;
-    doc["panel_id"] = panel_id;
-    doc["unit_id"] = unit_id;
-
-    String jsonData;
-    serializeJson(doc, jsonData);
-
-    Serial.println("Sending JSON:");
-    Serial.println(jsonData);
-
-    int httpResponseCode = http.POST(jsonData);
-
-    if (httpResponseCode > 0)
-    {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-        String response = http.getString();
-        Serial.println("Response: " + response);
-    }
-    else
-    {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
-    }
-
-    http.end();
 }
 
 bool isPanelExist(String id)

@@ -13,14 +13,12 @@ return new class extends Migration
     {
         Schema::create('panel_readings', function (Blueprint $table) {
             $table->id();
-            $table->string('panel_id');
-            $table->string('data_id');
-            $table->float('dust')->default(0);
+            $table->string('panel_id', 30);
+            $table->string('data_id', 35);
             $table->float('current')->default(0);
             $table->float('voltage')->default(0);
             $table->float('power')->default(0);
             $table->timestamp('recorded_at')->useCurrent();
-            $table->timestamps();
         });
     }
 

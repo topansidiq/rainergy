@@ -1,29 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../server/db.js';
-import { findLocation, getLocation, showLocation } from '../helpers/location.js';
 
 export const unitRoutes = new Hono();
-
-unitRoutes.post('/', async (c) => {
-    try {
-        const body = await c.req.json();
-        const { unit_id, user_id, location } = body;
-
-        // Insert unit baru
-        const [id] = await db('units').insert({
-            unit_id,
-            user_id,
-            location
-        });
-
-        const unit = await db('units').where({ id }).first();
-
-        return c.json({ status: "success", message: "Unit created!", data: unit });
-    } catch (error) {
-        console.error("Failed to insert unit", error);
-        return c.json({ status: "error", message: "Failed to create unit" }, 500);
-    }
-});
 
 unitRoutes.get('/:unit_id', async (c) => {
     let message;

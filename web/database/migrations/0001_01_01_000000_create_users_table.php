@@ -21,7 +21,6 @@ return new class extends Migration
 
             $table->string('phone_number')->unique()->nullable();
             $table->string('units')->nullable()->default(0);
-            $table->string('panels')->nullable()->default(0);
             $table->boolean('membership')->nullable()->default(false);
             $table->string('address')->nullable();
             $table->rememberToken();
